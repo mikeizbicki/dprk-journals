@@ -21,4 +21,3 @@ $ python3 extract-info.py
 will generate the `metainfo.jsonl` file that contains extracted metainfo about each of the files.
 Unfortunately, the files do not store metainformation as-per the pdf standard, and so the information must be extracted directly from the text.
 This is an error-prone process, especially since all of the pdfs have slightly different formatting from each other.
-I estimate that the metainformation is at least 90% correct.
