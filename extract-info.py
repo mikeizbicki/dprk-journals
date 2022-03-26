@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import traceback
 import glob
 import os
 import pprint
@@ -100,27 +101,38 @@ if __name__=='__main__':
         paths = glob.glob('pdfs/**', recursive=True)
         paths = [ path for path in paths if os.path.isfile(path) ]
 
-        #paths = ['pdfs/univ/ko/research/journals/10/2018/1/52c409f1571f500e28f490a302a12540']
+        # These paths don't work
+        bad_paths = ['pdfs/univ/ko/research/journals/13/2021/1/913eb3f7a1d5e28b3f30b2dda4f5569e']
+        paths = ['pdfs/univ/ko/research/journals/5/2015/8/8b4066554730ddfaa0266346bdc1b202']
 
         # process each pdf
         for path in paths[0:]:
-            print("path=",path)
+            print("path=",path,flush=True)
 
             try:
                 # process the text
                 pdftext = extract_text(path)
                 pdflines = extract_lines(pdftext)
-                #print("'\n'.join(pdflines)=",'\n'.join(pdflines))
 
                 # extract header info
                 info = {}
                 info['path'] = path
                 info['venue_korean'] = pdflines[0]
                 info['subject_korean'] = pdflines[1]
-                info['year_raw'] = pdflines[2]
-                info['volume_raw'] = pdflines[3]
-                info['title_korean'] = pdflines[4]
-                info['authors_korean'] = pdflines[5]
+
+                # sometimes the year and volume get merged onto a single line;
+                # the parsing needs to be done differently whether this happens or not
+                if '제' in pdflines[2]:
+                    info['year_raw'] = pdflines[2].split('제')[0]
+                    info['volume_raw'] = ' '.join(pdflines[2].split()[1:])
+                    info['title_korean'] = pdflines[3]
+                    info['authors_korean'] = pdflines[4]
+
+                else:
+                    info['year_raw'] = pdflines[2]
+                    info['volume_raw'] = pdflines[3]
+                    info['title_korean'] = pdflines[4]
+                    info['authors_korean'] = pdflines[5]
 
                 # get year
                 m = re.search(r'\d{4}', info['year_raw'])
@@ -132,8 +144,10 @@ if __name__=='__main__':
                 m = re.search(r'\d+', info['volume_raw'][::-1])
                 info['number'] = int(m.group(0)[::-1])
 
-                # english info
-                bottominfo = []
+                # some pdfs contain an english title and abstract;
+                # to extract this information, we put all of the lines of text at the bottom of the page that do not contain CJK characters in the bottomlines variable;
+                # then if that variable is large enough,
+                # we extract the appropriate lines
                 bottomlines = []
                 for line in reversed(pdflines):
                     if not has_cjk(line):
@@ -141,20 +155,30 @@ if __name__=='__main__':
                     else:
                         break
                 bottomlines = list(reversed(bottomlines))
-                if bottomlines[0][0] == '－':
-                    bottomlines = bottomlines[1:]
 
-                info['title_english'] = bottomlines[0]
-                info['authors_english'] = bottomlines[1]
-                info['abstract_english'] = ' '.join(bottomlines[2:-1])
-                info['keywords_english'] = bottomlines[-1]
+                if len(bottomlines)>2:
+                    if bottomlines[0][0] == '－':
+                        bottomlines = bottomlines[1:]
+                    info['title_english'] = bottomlines[0]
+                    info['authors_english'] = bottomlines[1]
+                    info['abstract_english'] = ' '.join(bottomlines[2:-1])
+                    info['keywords_english'] = bottomlines[-1]
+
+                # made it to the end of the try block without an error,
+                # so register success
                 info['status'] = 'success'
-
 
             # record any errors
             except Exception as e:
-                print(str(e))
+                print(traceback.format_exc())
                 info['status'] = 'failed: '+str(e)
-               
+
+            # print debug info
+            if True:
+                print("'\n'.join(pdflines)=",'\n'.join(pdflines))
+                pprint.pprint(info)
+                crash_me
+
             # append the info
             f.write(json.dumps(info)+'\n')
+            f.flush()
