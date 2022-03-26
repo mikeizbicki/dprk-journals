@@ -103,7 +103,7 @@ if __name__=='__main__':
 
         # These paths don't work
         bad_paths = ['pdfs/univ/ko/research/journals/13/2021/1/913eb3f7a1d5e28b3f30b2dda4f5569e']
-        paths = ['pdfs/univ/ko/research/journals/5/2015/8/8b4066554730ddfaa0266346bdc1b202']
+        #paths = ['pdfs/univ/ko/research/journals/5/2015/8/8b4066554730ddfaa0266346bdc1b202']
 
         # process each pdf
         for path in paths[0:]:
@@ -174,7 +174,7 @@ if __name__=='__main__':
                 info['status'] = 'failed: '+str(e)
 
             # print debug info
-            if True:
+            if False:
                 print("'\n'.join(pdflines)=",'\n'.join(pdflines))
                 pprint.pprint(info)
                 crash_me
